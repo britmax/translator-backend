@@ -1,12 +1,14 @@
 import express from "express";
 import fetch from "node-fetch";
-import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-// POST /translate
+// -------------------------------
+// TRANSLATION ENDPOINT
+// -------------------------------
 app.post("/translate", async (req, res) => {
   const { text, target } = req.body;
 
@@ -22,31 +24,42 @@ app.post("/translate", async (req, res) => {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "deepseek/deepseek-chat",
         messages: [
           {
+            role: "system",
+            content: `Translate all user text into ${target}. Output ONLY plain text.`
+          },
+          {
             role: "user",
-            content: `Translate this into ${target}: ${text}`
+            content: text
           }
         ]
       })
     });
 
     const data = await response.json();
-
-    if (data.error) {
-      return res.status(500).json({ error: data.error.message || "Translation failed" });
-    }
-
     const translated = data.choices?.[0]?.message?.content || "";
-    res.json({ translated });
 
+    res.json({ translated });
   } catch (err) {
-    res.status(500).json({ error: "Server error", details: err.message });
+    res.status(500).json({ error: "Translation failed", details: err.message });
   }
 });
 
-// Start server
+// -------------------------------
+// WIDGET ENDPOINT
+// -------------------------------
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.get("/widget", (req, res) => {
+  res.sendFile(path.join(__dirname, "widget.html"));
+});
+
+// -------------------------------
+// START SERVER
+// -------------------------------
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Translator backend running on port ${PORT}`);
