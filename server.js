@@ -22,7 +22,7 @@ app.post("/translate", async (req, res) => {
     });
 
     const data = await response.json();
-
+console.log("OpenRouter raw response:", JSON.stringify(data, null, 2));
     const output =
       data?.choices?.[0]?.message?.content?.trim() ||
       "";
